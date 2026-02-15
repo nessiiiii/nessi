@@ -1,2 +1,133 @@
--- [[ NESSI HUB : ENCRYPTED STYLE SOURCE ]]
-local _0x1=game:GetService("Players");local _0x2=game:GetService("RunService");local _0x3=game:GetService("UserInputService");local _0x4=_0x1.LocalPlayer;local _0x5=workspace.CurrentCamera;if _0x4.PlayerGui:FindFirstChild("NessiHub_Official") then _0x4.PlayerGui.NessiHub_Official:Destroy() end;getgenv().Config={FastAttack=false,AttackRange=65,AutoAim=false,Hitbox=false,HitboxSize=30,SpeedHack=false,StepSpeed=1,AutoFarm=false,EspPlayer=false,EspLine=false,StickActive=false,StickTargetPlayer=nil};local _0x6=Instance.new("ScreenGui",_0x4.PlayerGui);_0x6.Name="NessiHub_Official";_0x6.ResetOnSpawn=false;local _0x7=Instance.new("Frame",_0x6);_0x7.Size=UDim2.new(0,700,0,550);_0x7.Position=UDim2.new(0.5,-350,0.2,0);_0x7.BackgroundColor3=Color3.fromRGB(10,10,10);_0x7.Active=true;_0x7.Draggable=true;_0x7.ClipsDescendants=true;Instance.new("UICorner",_0x7);local _0x8=Instance.new("Frame",_0x7);_0x8.Size=UDim2.new(1,6,1,6);_0x8.Position=UDim2.new(0,-3,0,-3);_0x8.ZIndex=0;Instance.new("UICorner",_0x8);task.spawn(function()while task.wait()do _0x8.BackgroundColor3=Color3.fromHSV(tick()%5/5,1,1)end end);local _0x9=Instance.new("TextLabel",_0x7);_0x9.Size=UDim2.new(1,0,0,60);_0x9.Text="NESSI HUB";_0x9.TextColor3=Color3.new(1,1,1);_0x9.TextSize=32;_0x9.Font=Enum.Font.GothamBold;_0x9.BackgroundTransparency=1;local _0xA=Instance.new("Frame",_0x7);_0xA.Size=UDim2.new(1,0,1,-60);_0xA.Position=UDim2.new(0,0,0,60);_0xA.BackgroundTransparency=1;local _0xB=Instance.new("TextButton",_0x7);_0xB.Size=UDim2.new(0,30,0,30);_0xB.Position=UDim2.new(1,-40,0,15);_0xB.Text="－";_0xB.BackgroundColor3=Color3.fromRGB(30,30,30);_0xB.TextColor3=Color3.new(1,1,1);Instance.new("UICorner",_0xB);_0xB.MouseButton1Click:Connect(function()local _0xC=(_0x7.Size.Y.Offset>100);_0x7:TweenSize(_0xC and UDim2.new(0,700,0,60) or UDim2.new(0,700,0,550),"Out","Quart",0.3,true);_0xA.Visible=not _0xC;_0xB.Text=_0xC and "＋" or "－"end);local _0xD=Instance.new("ScrollingFrame",_0xA);_0xD.Size=UDim2.new(0,200,0,400);_0xD.Position=UDim2.new(1,-220,0,40);_0xD.BackgroundColor3=Color3.fromRGB(20,20,20);_0xD.CanvasSize=UDim2.new(0,0,10,0);Instance.new("UIListLayout",_0xD);local function _0xE()for _,v in pairs(_0xD:GetChildren())do if v:IsA("TextButton")then v:Destroy()end end;for _,p in pairs(_0x1:GetPlayers())do if p~=_0x4 then local b=Instance.new("TextButton",_0xD);b.Size=UDim2.new(1,0,0,35);b.Text=p.DisplayName;b.BackgroundColor3=Color3.fromRGB(40,40,40);b.TextColor3=Color3.new(1,1,1);Instance.new("UICorner",b);b.MouseButton1Click:Connect(function()getgenv().Config.StickTargetPlayer=p end)end end end;task.spawn(function()while task.wait(30)do _0xE()end end);_0xE();local function _0xF(_n,_k,_x,_y)local b=Instance.new("TextButton",_0xA);b.Size=UDim2.new(0,160,0,35);b.Position=UDim2.new(0,_x,0,_y-60);b.Text=_n..": OFF";b.BackgroundColor3=Color3.fromRGB(30,30,30);b.TextColor3=Color3.new(1,1,1);Instance.new("UICorner",b);b.MouseButton1Click:Connect(function()getgenv().Config[_k]=not getgenv().Config[_k];b.Text=_n..(getgenv().Config[_k] and ": ON" or ": OFF");b.TextColor3=getgenv().Config[_k] and Color3.new(0,1,0) or Color3.new(1,1,1)end)end;local function _0x10(_n,_k,_x,_y)local l=Instance.new("TextLabel",_0xA);l.Size=UDim2.new(0,60,0,35);l.Position=UDim2.new(0,_x,0,_y-60);l.Text=_n;l.TextColor3=Color3.new(1,1,1);l.BackgroundTransparency=1;l.TextSize=10;local i=Instance.new("TextBox",_0xA);i.Size=UDim2.new(0,60,0,25);i.Position=UDim2.new(0,_x+65,0,_y+5-60);i.Text=tostring(getgenv().Config[_k]);i.BackgroundColor3=Color3.fromRGB(45,45,45);i.TextColor3=Color3.new(0,1,1);Instance.new("UICorner",i);i.FocusLost:Connect(function()getgenv().Config[_k]=tonumber(i.Text)or getgenv().Config[_k]end)end;_0xF("オートファーム","AutoFarm",20,80);_0xF("高速攻撃","FastAttack",20,125);_0x10("範囲:","AttackRange",190,125);_0xF("オートエイム","AutoAim",20,170);_0xF("ヒットボックス","Hitbox",20,215);_0x10("サイズ:","HitboxSize",190,215);_0xF("足加速","SpeedHack",20,260);_0x10("強度:","StepSpeed",190,260);_0xF("枠ESP","EspPlayer",20,305);_0xF("線ESP","EspLine",190,305);_0xF("追尾ON/OFF","StickActive",20,350);task.spawn(function()while true do _0x2.Heartbeat:Wait();pcall(function()local c=_0x4.Character;if not c then return end;local t={};if getgenv().Config.AutoFarm then for _,v in pairs(workspace.Enemies:GetChildren())do if v:FindFirstChild("Humanoid")and v.Humanoid.Health>0 then c.HumanoidRootPart.CFrame=v.HumanoidRootPart.CFrame*CFrame.new(0,0,5);table.insert(t,v);break end end elseif getgenv().Config.StickActive and getgenv().Config.StickTargetPlayer then local p=getgenv().Config.StickTargetPlayer.Character;if p then c.HumanoidRootPart.CFrame=p.HumanoidRootPart.CFrame*CFrame.new(0,0,3);table.insert(t,p)end end;if getgenv().Config.FastAttack or getgenv().Config.AutoFarm then if #t==0 then for _,v in pairs(workspace.Enemies:GetChildren())do if v:FindFirstChild("HumanoidRootPart")and(v.HumanoidRootPart.Position-c.HumanoidRootPart.Position).Magnitude<=getgenv().Config.AttackRange then table.insert(t,v)end end end;for _,_t in pairs(t)do local h=_t:FindFirstChild("HumanoidRootPart");if h then game:GetService("ReplicatedStorage").Modules.Net["RE/RegisterAttack"]:FireServer(0.125);game:GetService("ReplicatedStorage").Modules.Net["RE/RegisterHit"]:FireServer(h,{{_t,_t:FindFirstChild("Head")or h}})end end end;if getgenv().Config.AutoAim and getgenv().Config.StickTargetPlayer and getgenv().Config.StickTargetPlayer.Character then _0x5.CFrame=CFrame.new(_0x5.CFrame.Position,getgenv().Config.StickTargetPlayer.Character.HumanoidRootPart.Position)end;if getgenv().Config.SpeedHack and c.Humanoid.MoveDirection.Magnitude>0 then for i=1,getgenv().Config.StepSpeed do c:TranslateBy(c.Humanoid.MoveDirection*1.5)end end end)end end);_0x3.InputBegan:Connect(function(i,g)if not g and i.KeyCode==Enum.KeyCode.RightControl then _0x7.Visible=not _0x7.Visible end end)
+-- [[ NESSI HUB : GitHub Official Source (Minimize Added) ]]
+local LP = game:GetService("Players").LocalPlayer
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local Cam = workspace.CurrentCamera
+
+-- 重複起動を防止
+if LP.PlayerGui:FindFirstChild("NessiHub_Official") then LP.PlayerGui.NessiHub_Official:Destroy() end
+
+-- 全設定を管理
+getgenv().Config = {
+    FastAttack = false, AttackRange = 65,
+    AutoAim = false,
+    Hitbox = false, HitboxSize = 30,
+    SpeedHack = false, StepSpeed = 1,
+    AutoFarm = false,
+    EspPlayer = false, EspLine = false,
+    StickActive = false, StickTargetPlayer = nil
+}
+
+-- UIメインフレーム
+local sg = Instance.new("ScreenGui", LP.PlayerGui); sg.Name = "NessiHub_Official"; sg.ResetOnSpawn = false
+local main = Instance.new("Frame", sg); main.Size = UDim2.new(0, 700, 0, 550); main.Position = UDim2.new(0.5, -350, 0.2, 0); main.BackgroundColor3 = Color3.fromRGB(10, 10, 10); main.Active = true; main.Draggable = true; main.ClipsDescendants = true
+Instance.new("UICorner", main)
+
+-- 虹色に光る枠線
+local border = Instance.new("Frame", main); border.Size = UDim2.new(1, 6, 1, 6); border.Position = UDim2.new(0, -3, 0, -3); border.ZIndex = 0; Instance.new("UICorner", border)
+task.spawn(function() while task.wait() do border.BackgroundColor3 = Color3.fromHSV(tick() % 5 / 5, 1, 1) end end)
+
+local title = Instance.new("TextLabel", main); title.Size = UDim2.new(1, 0, 0, 60); title.Text = "NESSI HUB"; title.TextColor3 = Color3.new(1,1,1); title.TextSize = 32; title.Font = Enum.Font.GothamBold; title.BackgroundTransparency = 1
+
+-- --- 【最小化機能：ここを追加！】 ---
+local content = Instance.new("Frame", main); content.Size = UDim2.new(1, 0, 1, -60); content.Position = UDim2.new(0, 0, 0, 60); content.BackgroundTransparency = 1
+local minBtn = Instance.new("TextButton", main); minBtn.Size = UDim2.new(0, 30, 0, 30); minBtn.Position = UDim2.new(1, -40, 0, 15); minBtn.Text = "－"; minBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30); minBtn.TextColor3 = Color3.new(1, 1, 1); Instance.new("UICorner", minBtn)
+
+minBtn.MouseButton1Click:Connect(function()
+    local isMin = (main.Size.Y.Offset > 100)
+    main:TweenSize(isMin and UDim2.new(0, 700, 0, 60) or UDim2.new(0, 700, 0, 550), "Out", "Quart", 0.3, true)
+    content.Visible = not isMin; minBtn.Text = isMin and "＋" or "－"
+end)
+
+-- オートエイム用の注意書き (contentの中へ移動)
+local helpText = Instance.new("TextLabel", content); helpText.Size = UDim2.new(0, 200, 0, 40); helpText.Position = UDim2.new(1, -220, 0, 40-60); helpText.Text = "オートエイムを使う時は\n右からプレイヤーを選んでね"; helpText.TextColor3 = Color3.new(1, 0.8, 0); helpText.TextSize = 12; helpText.BackgroundTransparency = 1; helpText.Font = Enum.Font.GothamBold
+
+-- --- 【線ESP (Line) 修正版】 ---
+local Lines = {}
+RunService.RenderStepped:Connect(function()
+    for _, p in pairs(Players:GetPlayers()) do
+        local l = Lines[p.Name] or Drawing.new("Line")
+        Lines[p.Name] = l
+        if getgenv().Config.EspLine and p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local pos, onScreen = Cam:WorldToViewportPoint(p.Character.HumanoidRootPart.Position)
+            if onScreen then
+                l.From = Vector2.new(Cam.ViewportSize.X / 2, Cam.ViewportSize.Y); l.To = Vector2.new(pos.X, pos.Y)
+                l.Color = Color3.new(1, 0, 0); l.Thickness = 1; l.Transparency = 1; l.Visible = true
+            else l.Visible = false end
+        else l.Visible = false end
+    end
+end)
+
+-- --- 【プレイヤーリスト (30秒更新)】 ---
+local list = Instance.new("ScrollingFrame", content); list.Size = UDim2.new(0, 200, 0, 400); list.Position = UDim2.new(1, -220, 0, 100-60); list.BackgroundColor3 = Color3.fromRGB(20,20,20); list.CanvasSize = UDim2.new(0,0,10,0); Instance.new("UIListLayout", list)
+local function UpdateList()
+    for _, v in pairs(list:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LP then
+            local b = Instance.new("TextButton", list); b.Size = UDim2.new(1,0,0,35); b.Text = p.DisplayName; b.BackgroundColor3 = Color3.fromRGB(40,40,40); b.TextColor3 = Color3.new(1,1,1); Instance.new("UICorner", b)
+            b.MouseButton1Click:Connect(function() getgenv().Config.StickTargetPlayer = p end)
+        end
+    end
+end
+task.spawn(function() while task.wait(30) do UpdateList() end end); UpdateList()
+
+-- --- 【ヒットボックス修正ループ】 ---
+task.spawn(function()
+    while task.wait(0.5) do
+        if getgenv().Config.Hitbox then
+            pcall(function()
+                for _, v in pairs(workspace.Enemies:GetChildren()) do
+                    local hrp = v:FindFirstChild("HumanoidRootPart")
+                    if hrp then hrp.Size = Vector3.new(getgenv().Config.HitboxSize, getgenv().Config.HitboxSize, getgenv().Config.HitboxSize); hrp.Transparency = 0.8; hrp.CanCollide = false end
+                end
+            end)
+        end
+    end
+end)
+
+-- --- 【メイン攻撃・エイム・加速ループ】 ---
+task.spawn(function()
+    while true do RunService.Heartbeat:Wait()
+        pcall(function()
+            local char = LP.Character; if not char then return end
+            local targets = {}
+            if getgenv().Config.AutoFarm then
+                for _, v in pairs(workspace.Enemies:GetChildren()) do if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then char.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 0, 5); table.insert(targets, v); break end end
+            elseif getgenv().Config.StickActive and getgenv().Config.StickTargetPlayer then
+                local pChar = getgenv().Config.StickTargetPlayer.Character
+                if pChar then char.HumanoidRootPart.CFrame = pChar.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3); table.insert(targets, pChar) end
+            end
+            if getgenv().Config.FastAttack or getgenv().Config.AutoFarm then
+                if #targets == 0 then for _, v in pairs(workspace.Enemies:GetChildren()) do if v:FindFirstChild("HumanoidRootPart") and (v.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude <= getgenv().Config.AttackRange then table.insert(targets, v) end end end
+                for _, t in pairs(targets) do local hrp = t:FindFirstChild("HumanoidRootPart")
+                    if hrp then game:GetService("ReplicatedStorage").Modules.Net["RE/RegisterAttack"]:FireServer(0.125); game:GetService("ReplicatedStorage").Modules.Net["RE/RegisterHit"]:FireServer(hrp, {{t, t:FindFirstChild("Head") or hrp}}) end
+                end
+            end
+            if getgenv().Config.AutoAim and getgenv().Config.StickTargetPlayer and getgenv().Config.StickTargetPlayer.Character then Cam.CFrame = CFrame.new(Cam.CFrame.Position, getgenv().Config.StickTargetPlayer.Character.HumanoidRootPart.Position) end
+            if getgenv().Config.SpeedHack and char.Humanoid.MoveDirection.Magnitude > 0 then for i=1, getgenv().Config.StepSpeed do char:TranslateBy(char.Humanoid.MoveDirection * 1.5) end end
+        end)
+    end
+end)
+
+-- --- UIパーツ配置 (contentを親に指定) ---
+local function AddToggle(n, k, x, y)
+    local b = Instance.new("TextButton", content); b.Size = UDim2.new(0, 160, 0, 35); b.Position = UDim2.new(0, x, 0, y-60); b.Text = n .. ": OFF"; b.BackgroundColor3 = Color3.fromRGB(30,30,30); b.TextColor3 = Color3.new(1,1,1); Instance.new("UICorner", b)
+    b.MouseButton1Click:Connect(function() getgenv().Config[k] = not getgenv().Config[k]; b.Text = n .. (getgenv().Config[k] and ": ON" or ": OFF"); b.TextColor3 = getgenv().Config[k] and Color3.new(0,1,0) or Color3.new(1,1,1) end)
+end
+local function AddInput(n, k, x, y)
+    local l = Instance.new("TextLabel", content); l.Size = UDim2.new(0, 60, 0, 35); l.Position = UDim2.new(0, x, 0, y-60); l.Text = n; l.TextColor3 = Color3.new(1,1,1); l.BackgroundTransparency = 1; l.TextSize = 10
+    local i = Instance.new("TextBox", content); i.Size = UDim2.new(0, 60, 0, 25); i.Position = UDim2.new(0, x + 65, 0, y + 5-60); i.Text = tostring(getgenv().Config[k]); i.BackgroundColor3 = Color3.fromRGB(45,45,45); i.TextColor3 = Color3.new(0,1,1); Instance.new("UICorner", i)
+    i.FocusLost:Connect(function() getgenv().Config[k] = tonumber(i.Text) or getgenv().Config[k] end)
+end
+
+AddToggle("オートファーム", "AutoFarm", 20, 80)
+AddToggle("高速攻撃", "FastAttack", 20, 125); AddInput("範囲:", "AttackRange", 190, 125)
+AddToggle("オートエイム", "AutoAim", 20, 170)
+AddToggle("ヒットボックス", "Hitbox", 20, 215); AddInput("サイズ:", "HitboxSize", 190, 215)
+AddToggle("足加速", "SpeedHack", 20, 260); AddInput("強度:", "StepSpeed", 190, 260)
+AddToggle("枠ESP", "EspPlayer", 20, 305)
+AddToggle("線ESP", "EspLine", 190, 305)
+AddToggle("追尾ON/OFF", "StickActive", 20, 350)
+
+UIS.InputBegan:Connect(function(i, g) if not g and i.KeyCode == Enum.KeyCode.RightControl then main.Visible = not main.Visible end end)
