@@ -1,4 +1,4 @@
--- [[ NESSI HUB : ULTIMATE RE-FIX ]]
+-- [[ NESSI HUB : FULL FUNCTION RECOVERY ]]
 local LP = game:GetService("Players").LocalPlayer
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -20,69 +20,87 @@ getgenv().Config = {
     AirWalk = false
 }
 
--- UIメイン
+-- --- 【UI構築：重なりを防止】 ---
 local sg = Instance.new("ScreenGui", LP.PlayerGui); sg.Name = "NessiHub_Official"; sg.ResetOnSpawn = false
-local main = Instance.new("Frame", sg); main.Size = UDim2.new(0, 700, 0, 550); main.Position = UDim2.new(0.5, -350, 0.2, 0); main.BackgroundColor3 = Color3.fromRGB(10, 10, 10); main.Active = true; main.Draggable = true; main.ClipsDescendants = true
+local main = Instance.new("Frame", sg); main.Size = UDim2.new(0, 700, 0, 550); main.Position = UDim2.new(0.5, -350, 0.2, 0); main.BackgroundColor3 = Color3.fromRGB(15, 15, 15); main.Active = true; main.Draggable = true
 Instance.new("UICorner", main)
 
--- 虹枠
-local border = Instance.new("Frame", main); border.Size = UDim2.new(1, 6, 1, 6); border.Position = UDim2.new(0, -3, 0, -3); border.ZIndex = 0; Instance.new("UICorner", border)
-task.spawn(function() while task.wait() do border.BackgroundColor3 = Color3.fromHSV(tick() % 5 / 5, 1, 1) end end)
+local title = Instance.new("TextLabel", main); title.Size = UDim2.new(1, 0, 0, 50); title.Text = "NESSI HUB v3"; title.TextColor3 = Color3.new(1,1,1); title.TextSize = 20; title.Font = Enum.Font.GothamBold; title.BackgroundTransparency = 1
 
-local title = Instance.new("TextLabel", main); title.Size = UDim2.new(1, 0, 0, 60); title.Text = "NESSI HUB (PvP & FARM)"; title.TextColor3 = Color3.new(1,1,1); title.TextSize = 24; title.Font = Enum.Font.GothamBold; title.BackgroundTransparency = 1
+local content = Instance.new("Frame", main); content.Size = UDim2.new(1, 0, 1, -50); content.Position = UDim2.new(0, 0, 0, 50); content.BackgroundTransparency = 1
+local btnList = Instance.new("ScrollingFrame", content); btnList.Size = UDim2.new(0, 450, 1, -20); btnList.Position = UDim2.new(0, 10, 0, 10); btnList.BackgroundTransparency = 1; btnList.CanvasSize = UDim2.new(0, 0, 1.5, 0); btnList.ScrollBarThickness = 2
+local layout = Instance.new("UIListLayout", btnList); layout.Padding = UDim.new(0, 5)
 
-local content = Instance.new("Frame", main); content.Size = UDim2.new(1, 0, 1, -60); content.Position = UDim2.new(0, 0, 0, 60); content.BackgroundTransparency = 1
+-- プレイヤーリスト（右側）
+local pList = Instance.new("ScrollingFrame", content); pList.Size = UDim2.new(0, 210, 1, -20); pList.Position = UDim2.new(1, -220, 0, 100-90); pList.BackgroundColor3 = Color3.fromRGB(25,25,25); pList.CanvasSize = UDim2.new(0,0,5,0); Instance.new("UIListLayout", pList)
 
--- スクロール機能付きボタンエリア（ボタンが消えないように）
-local btnList = Instance.new("ScrollingFrame", content); btnList.Size = UDim2.new(0, 450, 0, 450); btnList.Position = UDim2.new(0, 20, 0, 20); btnList.BackgroundTransparency = 1; btnList.CanvasSize = UDim2.new(0, 0, 1.5, 0); btnList.ScrollBarThickness = 5
-local layout = Instance.new("UIListLayout", btnList); layout.Padding = UDim.new(0, 10)
-
--- 最小化
-local minBtn = Instance.new("TextButton", main); minBtn.Size = UDim2.new(0, 30, 0, 30); minBtn.Position = UDim2.new(1, -40, 0, 15); minBtn.Text = "－"; minBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30); minBtn.TextColor3 = Color3.new(1, 1, 1); Instance.new("UICorner", minBtn)
-minBtn.MouseButton1Click:Connect(function()
-    local isMin = (main.Size.Y.Offset > 100)
-    main:TweenSize(isMin and UDim2.new(0, 700, 0, 60) or UDim2.new(0, 700, 0, 550), "Out", "Quart", 0.3, true)
-    content.Visible = not isMin; minBtn.Text = isMin and "＋" or "－"
+-- --- 【独立稼働：空中歩行 (AirWalk)】 ---
+local awPart = Instance.new("Part"); awPart.Size = Vector3.new(10, 1, 10); awPart.Anchored = true; awPart.Transparency = 1; awPart.Parent = workspace
+RunService.Heartbeat:Connect(function()
+    if getgenv().Config.AirWalk and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+        awPart.CFrame = LP.Character.HumanoidRootPart.CFrame * CFrame.new(0, -3.5, 0)
+        awPart.CanCollide = true
+    else
+        awPart.CanCollide = false
+    end
 end)
 
--- プレイヤーリスト（右側固定）
-local pList = Instance.new("ScrollingFrame", content); pList.Size = UDim2.new(0, 200, 0, 450); pList.Position = UDim2.new(1, -220, 0, 20); pList.BackgroundColor3 = Color3.fromRGB(20,20,20); pList.CanvasSize = UDim2.new(0,0,10,0); Instance.new("UIListLayout", pList)
-local function UpdateList()
-    for _, v in pairs(pList:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
+-- --- 【独立稼働：ESP & ヒットボックス】 ---
+local Lines = {}
+RunService.RenderStepped:Connect(function()
     for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LP then
-            local b = Instance.new("TextButton", pList); b.Size = UDim2.new(1,0,0,35); b.Text = p.DisplayName; b.BackgroundColor3 = Color3.fromRGB(40,40,40); b.TextColor3 = (getgenv().Config.StickTargetPlayer == p) and Color3.new(0,1,0) or Color3.new(1,1,1); Instance.new("UICorner", b)
-            b.MouseButton1Click:Connect(function() getgenv().Config.StickTargetPlayer = p; UpdateList() end)
+        local l = Lines[p.Name] or Drawing.new("Line")
+        Lines[p.Name] = l
+        if getgenv().Config.EspLine and p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local pos, onScreen = Cam:WorldToViewportPoint(p.Character.HumanoidRootPart.Position)
+            if onScreen then
+                l.From = Vector2.new(Cam.ViewportSize.X / 2, Cam.ViewportSize.Y); l.To = Vector2.new(pos.X, pos.Y)
+                l.Color = Color3.new(1, 0, 0); l.Thickness = 1; l.Visible = true
+            else l.Visible = false end
+        else l.Visible = false end
+    end
+    -- ヒットボックス (描画ごとに更新)
+    if getgenv().Config.Hitbox then
+        for _, v in pairs(workspace.Enemies:GetChildren()) do
+            if v:FindFirstChild("HumanoidRootPart") then
+                v.HumanoidRootPart.Size = Vector3.new(getgenv().Config.HitboxSize, getgenv().Config.HitboxSize, getgenv().Config.HitboxSize)
+                v.HumanoidRootPart.Transparency = 0.7; v.HumanoidRootPart.CanCollide = false
+            end
         end
     end
-end
-task.spawn(function() while task.wait(5) do UpdateList() end end); UpdateList()
+end)
 
--- --- 【最強追尾 & 攻撃ロジック】 ---
+-- --- 【メイン：攻撃 & 追尾 (クリックバグ修正版)】 ---
 task.spawn(function()
+    local lastClick = 0
     while true do RunService.Heartbeat:Wait()
         pcall(function()
-            local char = LP.Character; if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+            local char = LP.Character; if not char then return end
             
-            -- 追尾 (StickActive)
+            -- 追尾
             if getgenv().Config.StickActive and getgenv().Config.StickTargetPlayer then
                 local tChar = getgenv().Config.StickTargetPlayer.Character
-                if tChar and tChar:FindFirstChild("HumanoidRootPart") then
-                    -- 相手の後ろに高速テレポートし続ける
-                    char.HumanoidRootPart.CFrame = tChar.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
-                end
+                if tChar then char.HumanoidRootPart.CFrame = tChar.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3) end
             end
 
-            -- Fast Attack & Instant Kill
+            -- 攻撃
             if getgenv().Config.FastAttack or getgenv().Config.AutoFarm then
                 local tool = char:FindFirstChildOfClass("Tool") or LP.Backpack:FindFirstChildOfClass("Tool")
                 if tool then
                     if tool.Parent == LP.Backpack then char.Humanoid:EquipTool(tool) end
-                    VU:CaptureController(); VU:ClickButton1(Vector2.new(0,0)) -- 物理連打
                     
+                    -- クリックバグ防止のため 0.1秒以上の間隔を空ける
+                    if tick() - lastClick > 0.12 then
+                        VU:Button1Down(Vector2.new(0,0), Cam.CFrame)
+                        task.wait(0.01)
+                        VU:Button1Up(Vector2.new(0,0), Cam.CFrame)
+                        lastClick = tick()
+                    end
+
+                    -- ダメージ判定
                     for _, v in pairs(workspace.Enemies:GetChildren()) do
                         if v:FindFirstChild("Humanoid") and (v.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude <= getgenv().Config.AttackRange then
-                            v.Humanoid.Health = 0 -- 即死命令
+                            v.Humanoid.Health = 0
                             game:GetService("ReplicatedStorage").Modules.Net["RE/RegisterHit"]:FireServer(v.HumanoidRootPart, {{v, v.Head}})
                         end
                     end
@@ -91,29 +109,34 @@ task.spawn(function()
             
             -- 加速
             if getgenv().Config.SpeedHack and char.Humanoid.MoveDirection.Magnitude > 0 then
-                char.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame + (char.Humanoid.MoveDirection * getgenv().Config.StepSpeed)
+                char.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame + (char.Humanoid.MoveDirection * (getgenv().Config.StepSpeed / 5))
             end
         end)
     end
 end)
 
--- ボタン追加用関数
+-- UIパーツ配置
 local function AddToggle(n, k)
-    local f = Instance.new("Frame", btnList); f.Size = UDim2.new(1, -10, 0, 40); f.BackgroundTransparency = 1
-    local b = Instance.new("TextButton", f); b.Size = UDim2.new(0, 160, 1, 0); b.Text = n .. ": OFF"; b.BackgroundColor3 = Color3.fromRGB(30,30,30); b.TextColor3 = Color3.new(1,1,1); Instance.new("UICorner", b)
+    local b = Instance.new("TextButton", btnList); b.Size = UDim2.new(1, -10, 0, 40); b.Text = n .. ": OFF"; b.BackgroundColor3 = Color3.fromRGB(40,40,40); b.TextColor3 = Color3.new(1,1,1); Instance.new("UICorner", b)
     b.MouseButton1Click:Connect(function() getgenv().Config[k] = not getgenv().Config[k]; b.Text = n .. (getgenv().Config[k] and ": ON" or ": OFF"); b.TextColor3 = getgenv().Config[k] and Color3.new(0,1,0) or Color3.new(1,1,1) end)
-    return f
 end
 
--- 全ボタンをリストに追加
-AddToggle("オートファーム", "AutoFarm")
 AddToggle("高速攻撃 & 即死", "FastAttack")
-AddToggle("オートエイム", "AutoAim")
-AddToggle("追尾 (選んだ人へ)", "StickActive")
+AddToggle("オートファーム", "AutoFarm")
+AddToggle("追尾 (選んだ人)", "StickActive")
 AddToggle("空中歩行", "AirWalk")
-AddToggle("枠ESP", "EspPlayer")
-AddToggle("線ESP", "EspLine")
 AddToggle("ヒットボックス", "Hitbox")
+AddToggle("線ESP", "EspLine")
 AddToggle("足加速", "SpeedHack")
 
-UIS.InputBegan:Connect(function(i, g) if not g and i.KeyCode == Enum.KeyCode.RightControl then main.Visible = not main.Visible end end)
+-- リスト更新
+local function UpdateList()
+    for _, v in pairs(pList:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LP then
+            local b = Instance.new("TextButton", pList); b.Size = UDim2.new(1,0,0,35); b.Text = p.DisplayName; b.BackgroundColor3 = Color3.fromRGB(45,45,45); b.TextColor3 = (getgenv().Config.StickTargetPlayer == p) and Color3.new(0,1,0) or Color3.new(1,1,1); Instance.new("UICorner", b)
+            b.MouseButton1Click:Connect(function() getgenv().Config.StickTargetPlayer = p; UpdateList() end)
+        end
+    end
+end
+UpdateList(); task.spawn(function() while task.wait(5) do UpdateList() end end)
