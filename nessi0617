@@ -87,6 +87,8 @@ end)
 
 -- --- 【メイン攻撃・エイム・加速ループ】 ---
 task.spawn(function()
+    -- 検知回避用のクールダウンタイマー
+    local lastAttack = 0
     while true do RunService.Heartbeat:Wait()
         pcall(function()
             local char = LP.Character; if not char then return end
@@ -98,18 +100,31 @@ task.spawn(function()
                 if pChar then char.HumanoidRootPart.CFrame = pChar.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3); table.insert(targets, pChar) end
             end
             
-            -- 【修正された Fast Attack ロジック】
+            -- 【検知回避版究極 Fast Attack】
             if getgenv().Config.FastAttack or getgenv().Config.AutoFarm then
-                if #targets == 0 then for _, v in pairs(workspace.Enemies:GetChildren()) do if v:FindFirstChild("HumanoidRootPart") and (v.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude <= getgenv().Config.AttackRange then table.insert(targets, v) end end end
-                for _, t in pairs(targets) do 
-                    local hrp = t:FindFirstChild("HumanoidRootPart")
-                    local tool = char:FindFirstChildOfClass("Tool")
-                    if hrp and tool then
-                        -- 信号を2重に送ることでダメージ判定を確実に通す
-                        game:GetService("ReplicatedStorage").Modules.Net["RE/RegisterAttack"]:FireServer(0.125)
-                        game:GetService("ReplicatedStorage").Modules.Net["RE/RegisterHit"]:FireServer(hrp, {{t, t:FindFirstChild("Head") or hrp}})
-                        -- 武器を自動で振る動作を追加（これで使えない人を減らす）
-                        tool:Activate()
+                -- 攻撃速度を0.15秒に微調整（速すぎると30秒で弾かれるため）
+                if tick() - lastAttack >= 0.15 then
+                    if #targets == 0 then 
+                        for _, v in pairs(workspace.Enemies:GetChildren()) do 
+                            if v:FindFirstChild("HumanoidRootPart") and (v.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude <= getgenv().Config.AttackRange then 
+                                table.insert(targets, v) 
+                            end 
+                        end 
+                    end
+
+                    for _, t in pairs(targets) do 
+                        local hrp = t:FindFirstChild("HumanoidRootPart")
+                        local tool = char:FindFirstChildOfClass("Tool") or LP.Backpack:FindFirstChildOfClass("Tool")
+                        
+                        if hrp and tool then
+                            if tool.Parent == LP.Backpack then char.Humanoid:EquipTool(tool) end
+                            
+                            -- 検知されにくい攻撃パターン
+                            game:GetService("ReplicatedStorage").Modules.Net["RE/RegisterAttack"]:FireServer(0.125)
+                            game:GetService("ReplicatedStorage").Modules.Net["RE/RegisterHit"]:FireServer(hrp, {{t, t:FindFirstChild("Head") or hrp}})
+                            tool:Activate()
+                            lastAttack = tick()
+                        end
                     end
                 end
             end
