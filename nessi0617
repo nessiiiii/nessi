@@ -30,7 +30,7 @@ task.spawn(function() while task.wait() do border.BackgroundColor3 = Color3.from
 
 local title = Instance.new("TextLabel", main); title.Size = UDim2.new(1, 0, 0, 60); title.Text = "NESSI HUB"; title.TextColor3 = Color3.new(1,1,1); title.TextSize = 32; title.Font = Enum.Font.GothamBold; title.BackgroundTransparency = 1
 
--- --- 【最小化機能：ここを追加！】 ---
+-- --- 【最小化機能】 ---
 local content = Instance.new("Frame", main); content.Size = UDim2.new(1, 0, 1, -60); content.Position = UDim2.new(0, 0, 0, 60); content.BackgroundTransparency = 1
 local minBtn = Instance.new("TextButton", main); minBtn.Size = UDim2.new(0, 30, 0, 30); minBtn.Position = UDim2.new(1, -40, 0, 15); minBtn.Text = "－"; minBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30); minBtn.TextColor3 = Color3.new(1, 1, 1); Instance.new("UICorner", minBtn)
 
@@ -40,7 +40,6 @@ minBtn.MouseButton1Click:Connect(function()
     content.Visible = not isMin; minBtn.Text = isMin and "＋" or "－"
 end)
 
--- オートエイム用の注意書き (contentの中へ移動)
 local helpText = Instance.new("TextLabel", content); helpText.Size = UDim2.new(0, 200, 0, 40); helpText.Position = UDim2.new(1, -220, 0, 40-60); helpText.Text = "オートエイムを使う時は\n右からプレイヤーを選んでね"; helpText.TextColor3 = Color3.new(1, 0.8, 0); helpText.TextSize = 12; helpText.BackgroundTransparency = 1; helpText.Font = Enum.Font.GothamBold
 
 -- --- 【線ESP (Line) 修正版】 ---
@@ -59,7 +58,7 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- --- 【プレイヤーリスト (30秒更新)】 ---
+-- --- 【プレイヤーリスト】 ---
 local list = Instance.new("ScrollingFrame", content); list.Size = UDim2.new(0, 200, 0, 400); list.Position = UDim2.new(1, -220, 0, 100-60); list.BackgroundColor3 = Color3.fromRGB(20,20,20); list.CanvasSize = UDim2.new(0,0,10,0); Instance.new("UIListLayout", list)
 local function UpdateList()
     for _, v in pairs(list:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
@@ -98,19 +97,30 @@ task.spawn(function()
                 local pChar = getgenv().Config.StickTargetPlayer.Character
                 if pChar then char.HumanoidRootPart.CFrame = pChar.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3); table.insert(targets, pChar) end
             end
+            
+            -- 【修正された Fast Attack ロジック】
             if getgenv().Config.FastAttack or getgenv().Config.AutoFarm then
                 if #targets == 0 then for _, v in pairs(workspace.Enemies:GetChildren()) do if v:FindFirstChild("HumanoidRootPart") and (v.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude <= getgenv().Config.AttackRange then table.insert(targets, v) end end end
-                for _, t in pairs(targets) do local hrp = t:FindFirstChild("HumanoidRootPart")
-                    if hrp then game:GetService("ReplicatedStorage").Modules.Net["RE/RegisterAttack"]:FireServer(0.125); game:GetService("ReplicatedStorage").Modules.Net["RE/RegisterHit"]:FireServer(hrp, {{t, t:FindFirstChild("Head") or hrp}}) end
+                for _, t in pairs(targets) do 
+                    local hrp = t:FindFirstChild("HumanoidRootPart")
+                    local tool = char:FindFirstChildOfClass("Tool")
+                    if hrp and tool then
+                        -- 信号を2重に送ることでダメージ判定を確実に通す
+                        game:GetService("ReplicatedStorage").Modules.Net["RE/RegisterAttack"]:FireServer(0.125)
+                        game:GetService("ReplicatedStorage").Modules.Net["RE/RegisterHit"]:FireServer(hrp, {{t, t:FindFirstChild("Head") or hrp}})
+                        -- 武器を自動で振る動作を追加（これで使えない人を減らす）
+                        tool:Activate()
+                    end
                 end
             end
+            
             if getgenv().Config.AutoAim and getgenv().Config.StickTargetPlayer and getgenv().Config.StickTargetPlayer.Character then Cam.CFrame = CFrame.new(Cam.CFrame.Position, getgenv().Config.StickTargetPlayer.Character.HumanoidRootPart.Position) end
             if getgenv().Config.SpeedHack and char.Humanoid.MoveDirection.Magnitude > 0 then for i=1, getgenv().Config.StepSpeed do char:TranslateBy(char.Humanoid.MoveDirection * 1.5) end end
         end)
     end
 end)
 
--- --- UIパーツ配置 (contentを親に指定) ---
+-- --- UIパーツ配置 ---
 local function AddToggle(n, k, x, y)
     local b = Instance.new("TextButton", content); b.Size = UDim2.new(0, 160, 0, 35); b.Position = UDim2.new(0, x, 0, y-60); b.Text = n .. ": OFF"; b.BackgroundColor3 = Color3.fromRGB(30,30,30); b.TextColor3 = Color3.new(1,1,1); Instance.new("UICorner", b)
     b.MouseButton1Click:Connect(function() getgenv().Config[k] = not getgenv().Config[k]; b.Text = n .. (getgenv().Config[k] and ": ON" or ": OFF"); b.TextColor3 = getgenv().Config[k] and Color3.new(0,1,0) or Color3.new(1,1,1) end)
