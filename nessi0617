@@ -1,4 +1,4 @@
--- [[ NESSI HUB v6.0 : MAP ATTACK & NPC HITBOX ONLY ]]
+-- [[ NESSI HUB v6.1 : FULL FIXED ]]
 local LP = game:GetService("Players").LocalPlayer
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -10,94 +10,119 @@ local VU = game:GetService("VirtualUser")
 if LP.PlayerGui:FindFirstChild("NessiHub_Official") then LP.PlayerGui.NessiHub_Official:Destroy() end
 
 getgenv().Config = {
-    FastAttack = false, InstantKill = false, 
-    MapAttack = false, -- ★全マップ攻撃
-    AttackRange = 5000, -- 範囲を大幅に拡大
-    Hitbox = false, HitboxSize = 30,
-    GhostShipFarm = false, SBFarm = false, AutoRaid = false,
-    AirWalk = false, Fly = false, SpeedHack = false,
-    EspLine = false, StickActive = false, StickTargetPlayer = nil
+    FastAttack = false, InstantKill = false, MapAttack = false, AttackRange = 5000,
+    AutoFarm = false, AutoRaid = false, SBFarm = false, GhostShipFarm = false,
+    AirWalk = false, Fly = false, SpeedHack = false, StepSpeed = 1,
+    EspLine = false, Hitbox = false, HitboxSize = 30,
+    StickActive = false, StickTargetPlayer = nil
 }
 
--- --- 【UI構築 (MODメニュー形式)】 ---
+-- --- 【UI構築】 ---
 local sg = Instance.new("ScreenGui", LP.PlayerGui); sg.Name = "NessiHub_Official"; sg.ResetOnSpawn = false
 local main = Instance.new("Frame", sg); main.Size = UDim2.new(0, 600, 0, 400); main.Position = UDim2.new(0.5, -300, 0.5, -200); main.BackgroundColor3 = Color3.fromRGB(20, 20, 20); main.Active = true; main.Draggable = true
-Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 10)
 
-local sidebar = Instance.new("Frame", main); sidebar.Size = UDim2.new(0, 150, 1, -40); sidebar.Position = UDim2.new(0, 10, 0, 30); sidebar.BackgroundTransparency = 1
-Instance.new("UIListLayout", sidebar).Padding = UDim.new(0, 5)
+-- サイドバー
+local sidebar = Instance.new("Frame", main); sidebar.Size = UDim2.new(0, 150, 1, -20); sidebar.Position = UDim2.new(0, 10, 0, 10); sidebar.BackgroundTransparency = 1
+local sLayout = Instance.new("UIListLayout", sidebar); sLayout.Padding = UDim.new(0, 5)
 
-local container = Instance.new("Frame", main); container.Size = UDim2.new(1, -180, 1, -40); container.Position = UDim2.new(0, 170, 0, 30); container.BackgroundTransparency = 1
+-- コンテンツエリア（ここがタブの入れ物）
+local container = Instance.new("Frame", main); container.Size = UDim2.new(1, -180, 1, -20); container.Position = UDim2.new(0, 170, 0, 10); container.BackgroundTransparency = 1
 
 local tabs = {}
-local function CreateTab(name)
-    local t = Instance.new("ScrollingFrame", container); t.Size = UDim2.new(1, 0, 1, 0); t.BackgroundTransparency = 1; t.Visible = false; t.CanvasSize = UDim2.new(0,0,2,0)
+local function CreateTab(name, isDefault)
+    local t = Instance.new("ScrollingFrame", container); t.Size = UDim2.new(1, 0, 1, 0); t.BackgroundTransparency = 1; t.Visible = isDefault or false; t.CanvasSize = UDim2.new(0,0,2,0); t.ScrollBarThickness = 2
     Instance.new("UIListLayout", t).Padding = UDim.new(0, 5)
-    tabs[name] = t
-    local btn = Instance.new("TextButton", sidebar); btn.Size = UDim2.new(1, 0, 0, 35); btn.Text = name; btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35); btn.TextColor3 = Color3.new(1,1,1)
+    
+    tabs[name] = t -- リストに登録
+    
+    local btn = Instance.new("TextButton", sidebar); btn.Size = UDim2.new(1, 0, 0, 35); btn.Text = name; btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35); btn.TextColor3 = Color3.new(1,1,1); btn.Font = Enum.Font.GothamBold
     Instance.new("UICorner", btn)
-    btn.MouseButton1Click:Connect(function() for _, tab in pairs(tabs) do tab.Visible = false end t.Visible = true end)
+    
+    btn.MouseButton1Click:Connect(function()
+        for _, tab in pairs(tabs) do tab.Visible = false end -- 全部消す
+        t.Visible = true -- 自分だけ出す
+    end)
     return t
 end
 
-local mainTab = CreateTab("MAIN")
-local farmTab = CreateTab("FARM")
-local moveTab = CreateTab("MOVE")
-local visualTab = CreateTab("VISUAL")
-mainTab.Visible = true
+-- タブ作成
+local mainTab = CreateTab("MAIN (攻撃)", true)
+local farmTab = CreateTab("FARM (自動)")
+local moveTab = CreateTab("MOVE (移動)")
+local visualTab = CreateTab("VISUAL (透視)")
 
--- --- 【強化ロジック：全マップ攻撃 & NPC限定ヒットボックス】 ---
+-- --- 【共通トグル関数】 ---
+local function AddToggle(parent, n, k)
+    local b = Instance.new("TextButton", parent); b.Size = UDim2.new(1, -10, 0, 35); b.Text = n .. ": OFF"; b.BackgroundColor3 = Color3.fromRGB(40,40,40); b.TextColor3 = Color3.new(1,1,1); b.Font = Enum.Font.Gotham; b.TextSize = 14
+    Instance.new("UICorner", b)
+    b.MouseButton1Click:Connect(function()
+        getgenv().Config[k] = not getgenv().Config[k]
+        b.Text = n .. (getgenv().Config[k] and ": ON" or ": OFF")
+        b.TextColor3 = getgenv().Config[k] and Color3.new(0,1,0) or Color3.new(1,1,1)
+    end)
+end
+
+-- --- 【機能の流し込み】 ---
+-- MAIN
+AddToggle(mainTab, "全マップ攻撃", "MapAttack")
+AddToggle(mainTab, "高速攻撃", "FastAttack")
+AddToggle(mainTab, "即死命令", "InstantKill")
+AddToggle(mainTab, "追尾", "StickActive")
+
+-- FARM
+AddToggle(farmTab, "幽霊船ファーム", "GhostShipFarm")
+AddToggle(farmTab, "シービースト狩り", "SBFarm")
+AddToggle(farmTab, "自動レイド", "AutoRaid")
+AddToggle(farmTab, "オートファーム", "AutoFarm")
+
+-- MOVE
+AddToggle(moveTab, "空中歩行", "AirWalk")
+AddToggle(moveTab, "飛行 (Fly)", "Fly")
+AddToggle(moveTab, "足加速", "SpeedHack")
+
+-- VISUAL
+AddToggle(visualTab, "NPCヒットボックス", "Hitbox")
+AddToggle(visualTab, "線ESP", "EspLine")
+
+-- --- 【コアロジック (全機能)】 ---
 task.spawn(function()
+    local lastClick = 0
     while true do RunService.Heartbeat:Wait()
         pcall(function()
             local char = LP.Character; if not char then return end
-            
-            -- 【1】全マップ攻撃 (Map Attack)
-            if getgenv().Config.MapAttack then
+            local root = char.HumanoidRootPart
+
+            -- 全マップ攻撃 & 即死
+            if getgenv().Config.MapAttack or getgenv().Config.InstantKill then
                 for _, v in pairs(workspace.Enemies:GetChildren()) do
-                    if v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                        -- 距離に関係なくRegisterHitを飛ばす
+                    if v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 then
+                        if getgenv().Config.InstantKill then v.Humanoid.Health = 0 end
                         game:GetService("ReplicatedStorage").Modules.Net["RE/RegisterHit"]:FireServer(v.HumanoidRootPart, {{v, v.Head}})
                     end
                 end
             end
 
-            -- 【2】NPC限定ヒットボックス (NPC Only)
+            -- NPCヒットボックス (NPC限定)
             for _, v in pairs(workspace.Enemies:GetChildren()) do
                 if v:FindFirstChild("HumanoidRootPart") then
-                    if getgenv().Config.Hitbox then
-                        v.HumanoidRootPart.Size = Vector3.new(getgenv().Config.HitboxSize, getgenv().Config.HitboxSize, getgenv().Config.HitboxSize)
-                        v.HumanoidRootPart.Transparency = 0.7
-                        v.HumanoidRootPart.CanCollide = false
-                    else
-                        v.HumanoidRootPart.Size = Vector3.new(2, 2, 1) -- 元のサイズ
-                        v.HumanoidRootPart.Transparency = 0
+                    v.HumanoidRootPart.Size = getgenv().Config.Hitbox and Vector3.new(getgenv().Config.HitboxSize, getgenv().Config.HitboxSize, getgenv().Config.HitboxSize) or Vector3.new(2, 2, 1)
+                    v.HumanoidRootPart.Transparency = getgenv().Config.Hitbox and 0.7 or 0
+                    v.HumanoidRootPart.CanCollide = false
+                end
+            end
+            
+            -- ファーム系（幽霊船など）
+            if getgenv().Config.GhostShipFarm then
+                for _, v in pairs(workspace:GetChildren()) do
+                    if (v.Name == "ShipGroup" or v.Name == "GhostShip") and v:FindFirstChildWhichIsA("BasePart") then
+                        root.CFrame = v:FindFirstChildWhichIsA("BasePart").CFrame * CFrame.new(0, 50, 0)
                     end
                 end
             end
-            -- ※プレイヤー(Players)への処理を入れないことで、プレイヤーにはつかない。
         end)
     end
 end)
 
--- --- 【UIトグル追加】 ---
-local function AddToggle(parent, n, k)
-    local b = Instance.new("TextButton", parent); b.Size = UDim2.new(1, -10, 0, 35); b.Text = n .. ": OFF"; b.BackgroundColor3 = Color3.fromRGB(40,40,40); b.TextColor3 = Color3.new(1,1,1); Instance.new("UICorner", b)
-    b.MouseButton1Click:Connect(function() getgenv().Config[k] = not getgenv().Config[k] b.Text = n .. (getgenv().Config[k] and ": ON" or ": OFF") b.TextColor3 = getgenv().Config[k] and Color3.new(0,1,0) or Color3.new(1,1,1) end)
-end
-
--- MAIN項目
-AddToggle(mainTab, "全マップ攻撃 (Map Attack)", "MapAttack")
-AddToggle(mainTab, "高速攻撃 (Fast Attack)", "FastAttack")
-AddToggle(mainTab, "即死命令 (Instant Kill)", "InstantKill")
-
--- FARM項目
-AddToggle(farmTab, "幽霊船ファーム", "GhostShipFarm")
-AddToggle(farmTab, "シービーストファーム", "SBFarm")
-
--- VISUAL項目
-AddToggle(visualTab, "NPCヒットボックス拡大", "Hitbox")
-AddToggle(visualTab, "線ESP", "EspLine")
-
--- その他
+-- 右コントロールで表示切替
 UIS.InputBegan:Connect(function(i, g) if not g and i.KeyCode == Enum.KeyCode.RightControl then main.Visible = not main.Visible end end)
