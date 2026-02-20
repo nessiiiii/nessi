@@ -1,122 +1,97 @@
--- [[ NESSI HUB v6.1 : FULL FIXED ]]
+-- [[ NESSI HUB v6.2 : STABLE FULL VERSION ]]
 local LP = game:GetService("Players").LocalPlayer
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-local Cam = workspace.CurrentCamera
 local VU = game:GetService("VirtualUser")
+local Cam = workspace.CurrentCamera
 
 -- 重複起動防止
 if LP.PlayerGui:FindFirstChild("NessiHub_Official") then LP.PlayerGui.NessiHub_Official:Destroy() end
 
+-- 設定（ここに全てのフラグを集中）
 getgenv().Config = {
-    FastAttack = false, InstantKill = false, MapAttack = false, AttackRange = 5000,
-    AutoFarm = false, AutoRaid = false, SBFarm = false, GhostShipFarm = false,
-    AirWalk = false, Fly = false, SpeedHack = false, StepSpeed = 1,
-    EspLine = false, Hitbox = false, HitboxSize = 30,
-    StickActive = false, StickTargetPlayer = nil
+    FastAttack = false,
+    InstantKill = false,
+    MapAttack = false,
+    GhostShipFarm = false,
+    SBFarm = false,
+    Hitbox = false,
+    HitboxSize = 30,
+    AirWalk = false,
+    SpeedHack = false
 }
 
--- --- 【UI構築】 ---
+-- --- 【UI構築：シンプル・イズ・ベスト】 ---
 local sg = Instance.new("ScreenGui", LP.PlayerGui); sg.Name = "NessiHub_Official"; sg.ResetOnSpawn = false
-local main = Instance.new("Frame", sg); main.Size = UDim2.new(0, 600, 0, 400); main.Position = UDim2.new(0.5, -300, 0.5, -200); main.BackgroundColor3 = Color3.fromRGB(20, 20, 20); main.Active = true; main.Draggable = true
+local main = Instance.new("Frame", sg); main.Size = UDim2.new(0, 450, 0, 500); main.Position = UDim2.new(0.5, -225, 0.5, -250); main.BackgroundColor3 = Color3.fromRGB(15, 15, 15); main.Active = true; main.Draggable = true
 Instance.new("UICorner", main).CornerRadius = UDim.new(0, 10)
 
--- サイドバー
-local sidebar = Instance.new("Frame", main); sidebar.Size = UDim2.new(0, 150, 1, -20); sidebar.Position = UDim2.new(0, 10, 0, 10); sidebar.BackgroundTransparency = 1
-local sLayout = Instance.new("UIListLayout", sidebar); sLayout.Padding = UDim.new(0, 5)
+local title = Instance.new("TextLabel", main); title.Size = UDim2.new(1, 0, 0, 40); title.Text = "NESSI HUB v6.2 (STABLE)"; title.TextColor3 = Color3.new(1,1,1); title.BackgroundTransparency = 1; title.Font = Enum.Font.GothamBold
 
--- コンテンツエリア（ここがタブの入れ物）
-local container = Instance.new("Frame", main); container.Size = UDim2.new(1, -180, 1, -20); container.Position = UDim2.new(0, 170, 0, 10); container.BackgroundTransparency = 1
+-- スクロールエリア（ここに全部並べる）
+local scroll = Instance.new("ScrollingFrame", main); scroll.Size = UDim2.new(1, -20, 1, -60); scroll.Position = UDim2.new(0, 10, 0, 50); scroll.BackgroundTransparency = 1; scroll.CanvasSize = UDim2.new(0,0,2,0); scroll.ScrollBarThickness = 3
+local layout = Instance.new("UIListLayout", scroll); layout.Padding = UDim.new(0, 5)
 
-local tabs = {}
-local function CreateTab(name, isDefault)
-    local t = Instance.new("ScrollingFrame", container); t.Size = UDim2.new(1, 0, 1, 0); t.BackgroundTransparency = 1; t.Visible = isDefault or false; t.CanvasSize = UDim2.new(0,0,2,0); t.ScrollBarThickness = 2
-    Instance.new("UIListLayout", t).Padding = UDim.new(0, 5)
-    
-    tabs[name] = t -- リストに登録
-    
-    local btn = Instance.new("TextButton", sidebar); btn.Size = UDim2.new(1, 0, 0, 35); btn.Text = name; btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35); btn.TextColor3 = Color3.new(1,1,1); btn.Font = Enum.Font.GothamBold
-    Instance.new("UICorner", btn)
-    
-    btn.MouseButton1Click:Connect(function()
-        for _, tab in pairs(tabs) do tab.Visible = false end -- 全部消す
-        t.Visible = true -- 自分だけ出す
-    end)
-    return t
-end
-
--- タブ作成
-local mainTab = CreateTab("MAIN (攻撃)", true)
-local farmTab = CreateTab("FARM (自動)")
-local moveTab = CreateTab("MOVE (移動)")
-local visualTab = CreateTab("VISUAL (透視)")
-
--- --- 【共通トグル関数】 ---
-local function AddToggle(parent, n, k)
-    local b = Instance.new("TextButton", parent); b.Size = UDim2.new(1, -10, 0, 35); b.Text = n .. ": OFF"; b.BackgroundColor3 = Color3.fromRGB(40,40,40); b.TextColor3 = Color3.new(1,1,1); b.Font = Enum.Font.Gotham; b.TextSize = 14
+-- --- 【ボタン作成関数】 ---
+local function AddToggle(n, k)
+    local b = Instance.new("TextButton", scroll); b.Size = UDim2.new(1, -10, 0, 40); b.Text = n .. ": OFF"; b.BackgroundColor3 = Color3.fromRGB(30, 30, 30); b.TextColor3 = Color3.new(1, 1, 1); b.Font = Enum.Font.Gotham
     Instance.new("UICorner", b)
     b.MouseButton1Click:Connect(function()
         getgenv().Config[k] = not getgenv().Config[k]
         b.Text = n .. (getgenv().Config[k] and ": ON" or ": OFF")
-        b.TextColor3 = getgenv().Config[k] and Color3.new(0,1,0) or Color3.new(1,1,1)
+        b.BackgroundColor3 = getgenv().Config[k] and Color3.fromRGB(50, 80, 50) or Color3.fromRGB(30, 30, 30)
     end)
 end
 
--- --- 【機能の流し込み】 ---
--- MAIN
-AddToggle(mainTab, "全マップ攻撃", "MapAttack")
-AddToggle(mainTab, "高速攻撃", "FastAttack")
-AddToggle(mainTab, "即死命令", "InstantKill")
-AddToggle(mainTab, "追尾", "StickActive")
+-- --- 【機能一覧】 ---
+AddToggle("【強】全マップ攻撃 (Map Attack)", "MapAttack")
+AddToggle("【新】幽霊船素材集め", "GhostShipFarm")
+AddToggle("【新】シービースト狩り", "SBFarm")
+AddToggle("高速攻撃 (Fast Attack)", "FastAttack")
+AddToggle("即死命令 (Instant Kill)", "InstantKill")
+AddToggle("NPCヒットボックス拡大", "Hitbox")
+AddToggle("空中歩行 (Air Walk)", "AirWalk")
+AddToggle("足加速 (Speed Hack)", "SpeedHack")
 
--- FARM
-AddToggle(farmTab, "幽霊船ファーム", "GhostShipFarm")
-AddToggle(farmTab, "シービースト狩り", "SBFarm")
-AddToggle(farmTab, "自動レイド", "AutoRaid")
-AddToggle(farmTab, "オートファーム", "AutoFarm")
-
--- MOVE
-AddToggle(moveTab, "空中歩行", "AirWalk")
-AddToggle(moveTab, "飛行 (Fly)", "Fly")
-AddToggle(moveTab, "足加速", "SpeedHack")
-
--- VISUAL
-AddToggle(visualTab, "NPCヒットボックス", "Hitbox")
-AddToggle(visualTab, "線ESP", "EspLine")
-
--- --- 【コアロジック (全機能)】 ---
+-- --- 【コアロジック：ひとつのループで全部回す】 ---
 task.spawn(function()
-    local lastClick = 0
     while true do RunService.Heartbeat:Wait()
         pcall(function()
             local char = LP.Character; if not char then return end
             local root = char.HumanoidRootPart
 
-            -- 全マップ攻撃 & 即死
-            if getgenv().Config.MapAttack or getgenv().Config.InstantKill then
-                for _, v in pairs(workspace.Enemies:GetChildren()) do
-                    if v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 then
-                        if getgenv().Config.InstantKill then v.Humanoid.Health = 0 end
+            -- 1. 攻撃系 (MapAttack / FastAttack / InstantKill)
+            for _, v in pairs(workspace.Enemies:GetChildren()) do
+                if v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                    if getgenv().Config.MapAttack or getgenv().Config.FastAttack then
                         game:GetService("ReplicatedStorage").Modules.Net["RE/RegisterHit"]:FireServer(v.HumanoidRootPart, {{v, v.Head}})
+                    end
+                    if getgenv().Config.InstantKill then
+                        v.Humanoid.Health = 0
                     end
                 end
             end
 
-            -- NPCヒットボックス (NPC限定)
+            -- 2. ヒットボックス (NPCのみ)
             for _, v in pairs(workspace.Enemies:GetChildren()) do
                 if v:FindFirstChild("HumanoidRootPart") then
-                    v.HumanoidRootPart.Size = getgenv().Config.Hitbox and Vector3.new(getgenv().Config.HitboxSize, getgenv().Config.HitboxSize, getgenv().Config.HitboxSize) or Vector3.new(2, 2, 1)
-                    v.HumanoidRootPart.Transparency = getgenv().Config.Hitbox and 0.7 or 0
+                    v.HumanoidRootPart.Size = getgenv().Config.Hitbox and Vector3.new(30, 30, 30) or Vector3.new(2, 2, 1)
+                    v.HumanoidRootPart.Transparency = getgenv().Config.Hitbox and 0.8 or 0
                     v.HumanoidRootPart.CanCollide = false
                 end
             end
-            
-            -- ファーム系（幽霊船など）
+
+            -- 3. 幽霊船 & SB テレぽ
             if getgenv().Config.GhostShipFarm then
                 for _, v in pairs(workspace:GetChildren()) do
                     if (v.Name == "ShipGroup" or v.Name == "GhostShip") and v:FindFirstChildWhichIsA("BasePart") then
                         root.CFrame = v:FindFirstChildWhichIsA("BasePart").CFrame * CFrame.new(0, 50, 0)
+                    end
+                end
+            elseif getgenv().Config.SBFarm then
+                for _, v in pairs(workspace:GetChildren()) do
+                    if v.Name == "Sea Beast" and v:FindFirstChild("HumanoidRootPart") then
+                        root.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 50, 0)
                     end
                 end
             end
@@ -124,5 +99,13 @@ task.spawn(function()
     end
 end)
 
--- 右コントロールで表示切替
+-- 空中歩行
+local aw = Instance.new("Part", workspace); aw.Size = Vector3.new(20,1,20); aw.Anchored = true; aw.Transparency = 1
+RunService.Heartbeat:Connect(function()
+    if getgenv().Config.AirWalk and LP.Character:FindFirstChild("HumanoidRootPart") then
+        aw.CFrame = LP.Character.HumanoidRootPart.CFrame * CFrame.new(0,-3.5,0); aw.CanCollide = true
+    else aw.CanCollide = false end
+end)
+
+-- 右コン非表示
 UIS.InputBegan:Connect(function(i, g) if not g and i.KeyCode == Enum.KeyCode.RightControl then main.Visible = not main.Visible end end)
