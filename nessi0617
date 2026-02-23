@@ -1,83 +1,121 @@
--- [[ NESSI HUB FULL POWER : PART 1 ]]
+-- [[ NESSI HUB MODERN EDITION : PART 1 (UI) ]]
 local LP = game:GetService("Players").LocalPlayer
 local UIS = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 
--- 既存UIの掃除
-if LP.PlayerGui:FindFirstChild("NessiFullPower") then LP.PlayerGui.NessiFullPower:Destroy() end
+if LP.PlayerGui:FindFirstChild("NessiModern") then LP.PlayerGui.NessiModern:Destroy() end
 
--- 全てのフラグを _G で管理（パーツ間連携を確実にするため）
-_G.NessiConfig = {
-    MapAttack = false, 
-    FastAttack = false, 
-    InstantKill = false,
-    GhostShipFarm = false, 
-    SBFarm = false, 
-    AutoRaid = false,
-    Hitbox = false, 
-    HitboxSize = 35, 
-    AirWalk = false, 
-    SpeedHack = false,
-    StickActive = false, 
-    TargetPlayer = nil
+_G.NessiConfig = _G.NessiConfig or {
+    MapAttack = false, FastAttack = false, InstantKill = false,
+    GhostShipFarm = false, SBFarm = false, AutoRaid = false,
+    Hitbox = false, HitboxSize = 35, AirWalk = false, SpeedHack = false, StepSpeed = 5, -- 速度を5にアップ
+    StickActive = false, TargetPlayer = nil
 }
 _G.LastRefresh = 0
 
--- UIメインフレーム
-local sg = Instance.new("ScreenGui", LP.PlayerGui); sg.Name = "NessiFullPower"; sg.ResetOnSpawn = false
-local main = Instance.new("Frame", sg); main.Size = UDim2.new(0, 300, 0, 520); main.Position = UDim2.new(0.1, 0, 0.2, 0); main.BackgroundColor3 = Color3.fromRGB(15, 15, 20); main.Active = true; main.Draggable = true
-Instance.new("UICorner", main).CornerRadius = UDim.new(0, 10)
+-- --- 【UI 構築】 ---
+local sg = Instance.new("ScreenGui", LP.PlayerGui); sg.Name = "NessiModern"; sg.ResetOnSpawn = false
+local main = Instance.new("Frame", sg)
+main.Size = UDim2.new(0, 320, 0, 550)
+main.Position = UDim2.new(0.05, 0, 0.15, 0)
+main.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+main.BackgroundTransparency = 0.1
+main.Active = true
+main.Draggable = true
+
+local corner = Instance.new("UICorner", main); corner.CornerRadius = UDim.new(0, 15)
+local stroke = Instance.new("UIStroke", main); stroke.Color = Color3.fromRGB(0, 255, 150); stroke.Thickness = 2; stroke.Transparency = 0.5
 
 -- タイトル
-local title = Instance.new("TextLabel", main); title.Size = UDim2.new(1, 0, 0, 40); title.Text = "🐍 NESSI HUB FULL POWER 🐍"; title.TextColor3 = Color3.fromRGB(0, 255, 120); title.BackgroundColor3 = Color3.fromRGB(25, 25, 35); title.Font = Enum.Font.GothamBold; title.TextSize = 14
+local title = Instance.new("TextLabel", main)
+title.Size = UDim2.new(1, 0, 0, 50)
+title.Text = "🐍 NESSI MODERN v2"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextSize = 18
+title.Font = Enum.Font.GothamBold
+title.BackgroundTransparency = 1
 
--- 1. 機能トグル用スクロール
-local scroll = Instance.new("ScrollingFrame", main); scroll.Size = UDim2.new(1, -10, 1, -220); scroll.Position = UDim2.new(0, 5, 0, 45); scroll.BackgroundTransparency = 1; scroll.CanvasSize = UDim2.new(0, 0, 2.5, 0); scroll.ScrollBarThickness = 3
-local layout = Instance.new("UIListLayout", scroll); layout.Padding = UDim.new(0, 5); layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+-- スクロール（機能トグル用）
+local scroll = Instance.new("ScrollingFrame", main)
+scroll.Size = UDim2.new(1, -20, 0, 300)
+scroll.Position = UDim2.new(0, 10, 0, 60)
+scroll.BackgroundTransparency = 1
+scroll.CanvasSize = UDim2.new(0, 0, 2.5, 0)
+scroll.ScrollBarThickness = 0 -- スッキリさせるために消すぜ
 
--- 2. プレイヤーリスト用スクロール（下部に固定）
-local pTitle = Instance.new("TextLabel", main); pTitle.Size = UDim2.new(1, 0, 0, 25); pTitle.Position = UDim2.new(0, 0, 1, -165); pTitle.Text = "-- SELECT TARGET (30s REFRESH) --"; pTitle.TextColor3 = Color3.fromRGB(255, 200, 0); pTitle.BackgroundTransparency = 1; pTitle.Font = Enum.Font.GothamBold; pTitle.TextSize = 10
+local layout = Instance.new("UIListLayout", scroll); layout.Padding = UDim.new(0, 8)
 
-local pScroll = Instance.new("ScrollingFrame", main); pScroll.Size = UDim2.new(1, -20, 0, 130); pScroll.Position = UDim2.new(0, 10, 1, -140); pScroll.BackgroundColor3 = Color3.fromRGB(25, 25, 30); pScroll.CanvasSize = UDim2.new(0, 0, 5, 0); pScroll.ScrollBarThickness = 2
-Instance.new("UIListLayout", pScroll).Padding = UDim.new(0, 2); Instance.new("UICorner", pScroll)
+-- ターゲット選択エリア（独立）
+local targetFrame = Instance.new("Frame", main)
+targetFrame.Size = UDim2.new(1, -20, 0, 150)
+targetFrame.Position = UDim2.new(0, 10, 1, -165)
+targetFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+Instance.new("UICorner", targetFrame).CornerRadius = UDim.new(0, 10)
 
--- プレイヤーリスト更新関数（グローバル化）
+local pTitle = Instance.new("TextLabel", targetFrame)
+pTitle.Size = UDim2.new(1, 0, 0, 25)
+pTitle.Text = "🎯 TARGET SELECTOR (30s)"
+pTitle.TextColor3 = Color3.fromRGB(0, 255, 255)
+pTitle.Font = Enum.Font.GothamBold
+pTitle.TextSize = 12
+pTitle.BackgroundTransparency = 1
+
+local pScroll = Instance.new("ScrollingFrame", targetFrame)
+pScroll.Size = UDim2.new(1, -10, 1, -35)
+pScroll.Position = UDim2.new(0, 5, 0, 30)
+pScroll.BackgroundTransparency = 1
+pScroll.CanvasSize = UDim2.new(0, 0, 10, 0)
+pScroll.ScrollBarThickness = 2
+Instance.new("UIListLayout", pScroll).Padding = UDim.new(0, 3)
+
+-- --- 【ボタン作成関数（モダン版）】 ---
+_G.CreateNessiToggle = function(name, configKey)
+    local btn = Instance.new("TextButton", scroll)
+    btn.Size = UDim2.new(1, 0, 0, 40)
+    btn.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+    btn.Text = name
+    btn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    btn.Font = Enum.Font.GothamSemibold
+    btn.TextSize = 13
+    local bCorner = Instance.new("UICorner", btn)
+    
+    -- 更新関数
+    local function update()
+        local active = _G.NessiConfig[configKey]
+        TweenService:Create(btn, TweenInfo.new(0.3), {
+            BackgroundColor3 = active and Color3.fromRGB(0, 180, 100) or Color3.fromRGB(45, 45, 50),
+            TextColor3 = active and Color3.new(1, 1, 1) or Color3.fromRGB(200, 200, 200)
+        }):Play()
+    end
+    
+    btn.MouseButton1Click:Connect(function()
+        _G.NessiConfig[configKey] = not _G.NessiConfig[configKey]
+        update()
+    end)
+    update()
+end
+
+-- プレイヤーリスト更新
 _G.RefreshPlayerList = function()
     for _, child in pairs(pScroll:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
     for _, p in pairs(game:GetService("Players"):GetPlayers()) do
         if p ~= LP then
             local pBtn = Instance.new("TextButton", pScroll)
-            pBtn.Size = UDim2.new(1, -5, 0, 30); pBtn.Text = p.DisplayName; pBtn.Font = Enum.Font.Gotham; pBtn.TextSize = 11; pBtn.TextColor3 = Color3.new(1, 1, 1)
-            pBtn.BackgroundColor3 = (_G.NessiConfig.TargetPlayer == p) and Color3.fromRGB(100, 50, 150) or Color3.fromRGB(45, 45, 55)
+            pBtn.Size = UDim2.new(1, 0, 0, 28); pBtn.Text = p.DisplayName; pBtn.Font = Enum.Font.Gotham; pBtn.TextSize = 11; pBtn.TextColor3 = Color3.new(1, 1, 1)
+            pBtn.BackgroundColor3 = (_G.NessiConfig.TargetPlayer == p) and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(50, 50, 60)
             Instance.new("UICorner", pBtn)
-            pBtn.MouseButton1Click:Connect(function()
-                _G.NessiConfig.TargetPlayer = p
-                _G.RefreshPlayerList()
-            end)
+            pBtn.MouseButton1Click:Connect(function() _G.NessiConfig.TargetPlayer = p _G.RefreshPlayerList() end)
         end
     end
 end
 
--- トグル作成関数
-_G.CreateNessiToggle = function(name, configKey)
-    local btn = Instance.new("TextButton", scroll); btn.Size = UDim2.new(1, -10, 0, 35); btn.Text = name .. " : OFF"; btn.Font = Enum.Font.GothamSemibold; btn.TextSize = 12; btn.BackgroundColor3 = Color3.fromRGB(40, 40, 50); btn.TextColor3 = Color3.new(1, 1, 1)
-    Instance.new("UICorner", btn)
-    btn.MouseButton1Click:Connect(function()
-        _G.NessiConfig[configKey] = not _G.NessiConfig[configKey]
-        btn.Text = name .. (_G.NessiConfig[configKey] and " : ON" or " : OFF")
-        btn.BackgroundColor3 = _G.NessiConfig[configKey] and Color3.fromRGB(0, 150, 80) or Color3.fromRGB(40, 40, 50)
-    end)
-end
-
--- UI表示切替 (RightControl)
-UIS.InputBegan:Connect(function(i, g) if not g and i.KeyCode == Enum.KeyCode.RightControl then main.Visible = not main.Visible end end)
-
-print("Part 1: UI Foundation Loaded. Say 'Next' for Combat Logic!")-- [[ NESSI HUB FULL POWER : PART 2 ]]
+UIS.InputBegan:Connect(function(i, g) if not g and i.KeyCode == Enum.KeyCode.RightControl then main.Visible = not main.Visible end end)-- [[ NESSI HUB MODERN : PART 2 ]]
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
 local RegAttack = Net:WaitForChild("RE/RegisterAttack")
 local RegHit = Net:WaitForChild("RE/RegisterHit")
 
--- --- 【1. Aimbot Hook (namecallハックによる必中化)】 ---
+-- --- 【1. Aimbot Hook (対プレイヤー必中化)】 ---
 local function InitAimbotHook()
     local mt = getrawmetatable(game)
     local oldNamecall = mt.__namecall
@@ -87,17 +125,20 @@ local function InitAimbotHook()
         local method = getnamecallmethod()
         local args = {...}
         
-        -- MapAttackがONの時、リモートイベントの飛んでいく先を敵に固定する
+        -- MapAttackがONの時、全攻撃の矛先を「NPC」か「プレイヤー」に向ける
         if _G.NessiConfig.MapAttack and tostring(method) == "FireServer" then
             if tostring(self) == "RemoteEvent" or tostring(self) == "LeftClickRemote" then
-                -- 最も近い敵、またはターゲットへの座標に書き換え
+                -- NPC優先スキャン
                 for _, v in pairs(workspace.Enemies:GetChildren()) do
                     if v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 then
-                        if type(args[2]) == "vector" then
-                            args[2] = v.HumanoidRootPart.Position
-                        else
-                            args[2] = CFrame.new(v.HumanoidRootPart.Position)
-                        end
+                        args[2] = v.HumanoidRootPart.Position
+                        return oldNamecall(self, unpack(args))
+                    end
+                end
+                -- 次にプレイヤーをスキャン (PVP)
+                for _, p in pairs(game.Players:GetPlayers()) do
+                    if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character.Humanoid.Health > 0 then
+                        args[2] = p.Character.HumanoidRootPart.Position
                         return oldNamecall(self, unpack(args))
                     end
                 end
@@ -109,10 +150,10 @@ local function InitAimbotHook()
 end
 pcall(InitAimbotHook)
 
--- --- 【2. メイン実行ループ（攻撃・ファーム・更新）】 ---
+-- --- 【2. メイン実行ループ（攻撃・ファーム・足加速）】 ---
 task.spawn(function()
     while task.wait() do
-        -- プレイヤーリストの30秒自動更新
+        -- リスト30秒更新
         if tick() - _G.LastRefresh > 30 then
             _G.LastRefresh = tick()
             if _G.RefreshPlayerList then _G.RefreshPlayerList() end
@@ -122,85 +163,100 @@ task.spawn(function()
             local char = LP.Character
             if not char or not char:FindFirstChild("HumanoidRootPart") then return end
             local root = char.HumanoidRootPart
+            local hum = char:FindFirstChild("Humanoid")
             local tool = char:FindFirstChildOfClass("Tool")
 
-            -- 【攻撃セクション】
-            if _G.NessiConfig.MapAttack or _G.NessiConfig.FastAttack or _G.NessiConfig.InstantKill then
+            -- 【超高速・足加速 (Speed Hack)】
+            if _G.NessiConfig.SpeedHack and hum and hum.MoveDirection.Magnitude > 0 then
+                -- 座標を直接加算することで、通常のスピードハックを超える速度を出すぜ
+                char:TranslateBy(hum.MoveDirection * _G.NessiConfig.StepSpeed)
+            end
+
+            -- 【対人・対NPCハイブリッド攻撃】
+            if _G.NessiConfig.MapAttack or _G.NessiConfig.FastAttack then
                 local hitList = {}
+                
+                -- NPCをリストへ
                 for _, v in pairs(workspace.Enemies:GetChildren()) do
-                    if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                        local vRoot = v:FindFirstChild("HumanoidRootPart")
-                        if vRoot then
-                            -- 即死
-                            if _G.NessiConfig.InstantKill then v.Humanoid.Health = 0 end
-                            
-                            -- ヒットリスト（RegisterHit用）
-                            table.insert(hitList, {v, vRoot})
-                            
-                            -- 高速クリック攻撃 (直接リモート)
-                            if _G.NessiConfig.FastAttack and tool and tool:FindFirstChild("LeftClickRemote") then
-                                tool.LeftClickRemote:FireServer(vRoot.Position, 1)
-                            end
-                        end
+                    if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
+                        table.insert(hitList, {v, v.HumanoidRootPart})
                     end
                 end
                 
-                -- RegisterHit一括攻撃（これが一番削れる）
+                -- ★プレイヤーもリストへ追加（これでプレイヤーにもファストアタックが刺さる！）
+                for _, p in pairs(game.Players:GetPlayers()) do
+                    if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+                        local pHrp = p.Character:FindFirstChild("HumanoidRootPart")
+                        if pHrp then table.insert(hitList, {p.Character, pHrp}) end
+                    end
+                end
+                
                 if #hitList > 0 then
-                    RegAttack:FireServer(0.1) -- 攻撃ディレイを最小化
+                    -- 限界までパケットを飛ばす (0.01s)
+                    RegAttack:FireServer(0.01)
                     RegHit:FireServer(hitList[1][2], hitList)
+                    
+                    -- 直接リモートも叩く
+                    if tool and tool:FindFirstChild("LeftClickRemote") then
+                        tool.LeftClickRemote:FireServer(hitList[1][2].Position, 1)
+                    end
                 end
             end
-
-            -- 【プレイヤー追尾・ファーム】
-            if _G.NessiConfig.StickActive and _G.NessiConfig.TargetPlayer then
-                local tChar = _G.NessiConfig.TargetPlayer.Character
-                if tChar and tChar:FindFirstChild("HumanoidRootPart") then
-                    root.CFrame = tChar.HumanoidRootPart.CFrame * CFrame.new(0, 0, 5)
-                end
-            elseif _G.NessiConfig.GhostShipFarm then
-                for _, v in pairs(workspace:GetChildren()) do
-                    if (v.Name == "ShipGroup" or v.Name == "GhostShip") and v:FindFirstChildWhichIsA("BasePart") then
-                        root.CFrame = v:FindFirstChildWhichIsA("BasePart").CFrame * CFrame.new(0, 65, 0)
-                    end
+            
+            -- 即死 (NPCのみ)
+            if _G.NessiConfig.InstantKill then
+                for _, v in pairs(workspace.Enemies:GetChildren()) do
+                    if v:FindFirstChild("Humanoid") then v.Humanoid.Health = 0 end
                 end
             end
         end)
     end
-end)
-
-print("Part 2: Combat & AimHook Loaded. Say 'Next' for the Final Part!")-- [[ NESSI HUB FULL POWER : PART 3 ]]
+end)-- [[ NESSI HUB MODERN : PART 3 ]]
 local RunService = game:GetService("RunService")
 
--- --- 【1. 空中歩行 (Air Walk) 専用プラットフォーム】 ---
+-- --- 【1. 空中歩行 (Air Walk) プログラム】 ---
 local AirPlatform = Instance.new("Part", workspace)
-AirPlatform.Name = "NessiAirPlatform"
+AirPlatform.Name = "NessiModernAir"
 AirPlatform.Size = Vector3.new(30, 1, 30)
 AirPlatform.Transparency = 1
 AirPlatform.Anchored = true
 
 RunService.Stepped:Connect(function()
     if _G.NessiConfig.AirWalk and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
-        -- キャラクターの足元に常に透明な床を置く
         AirPlatform.CFrame = LP.Character.HumanoidRootPart.CFrame * CFrame.new(0, -3.5, 0)
         AirPlatform.CanCollide = true
     else
         AirPlatform.CanCollide = false
-        -- オフの時は奈落に飛ばしておく
         AirPlatform.CFrame = CFrame.new(0, -1000, 0)
     end
 end)
 
--- --- 【2. NPCヒットボックス拡大ロジック】 ---
+-- --- 【2. プレイヤー追尾 (Stick) ロジック】 ---
 task.spawn(function()
-    while task.wait(0.5) do -- 0.5秒おきに敵をスキャン
+    while task.wait() do
+        if _G.NessiConfig.StickActive and _G.NessiConfig.TargetPlayer then
+            pcall(function()
+                local tChar = _G.NessiConfig.TargetPlayer.Character
+                local myRoot = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+                if tChar and tChar:FindFirstChild("HumanoidRootPart") and myRoot then
+                    -- ターゲットの少し後ろに張り付くぜ
+                    myRoot.CFrame = tChar.HumanoidRootPart.CFrame * CFrame.new(0, 0, 5)
+                end
+            end)
+        end
+    end
+end)
+
+-- --- 【3. ヒットボックス拡大 (NPC専用)】 ---
+task.spawn(function()
+    while task.wait(0.5) do
         if _G.NessiConfig.Hitbox then
             pcall(function()
                 for _, v in pairs(workspace.Enemies:GetChildren()) do
                     if v:FindFirstChild("HumanoidRootPart") then
                         v.HumanoidRootPart.Size = Vector3.new(_G.NessiConfig.HitboxSize, _G.NessiConfig.HitboxSize, _G.NessiConfig.HitboxSize)
                         v.HumanoidRootPart.Transparency = 0.8
-                        v.HumanoidRootPart.CanCollide = false -- 自分がぶつかって跳ね返らないように
+                        v.HumanoidRootPart.CanCollide = false
                     end
                 end
             end)
@@ -208,45 +264,35 @@ task.spawn(function()
     end
 end)
 
--- --- 【3. UIボタンの最終登録（Part 1の関数を呼び出し）】 ---
+-- --- 【4. モダンUIへボタンを一括登録】 ---
 if _G.CreateNessiToggle then
-    -- 攻撃系
-    _G.CreateNessiToggle("全マップ攻撃 (Map + Hook)", "MapAttack")
-    _G.CreateNessiToggle("高速クリック (Fast)", "FastAttack")
-    _G.CreateNessiToggle("即死 (Instant Kill)", "InstantKill")
+    -- メイン攻撃（PVP/NPCハイブリッド）
+    _G.CreateNessiToggle("全マップ＆エイムフック", "MapAttack")
+    _G.CreateNessiToggle("極限ファストアタック", "FastAttack")
+    _G.CreateNessiToggle("NPC即死 (Instant)", "InstantKill")
     
-    -- ファーム系
-    _G.CreateNessiToggle("幽霊船素材集め", "GhostShipFarm")
-    _G.CreateNessiToggle("シービースト狩り", "SBFarm")
-    _G.CreateNessiToggle("自動レイド", "AutoRaid")
-    
-    -- 移動・ビジュアル
-    _G.CreateNessiToggle("NPCヒットボックス拡大", "Hitbox")
+    -- 移動
+    _G.CreateNessiToggle("爆速・足加速 (Speed)", "SpeedHack")
     _G.CreateNessiToggle("空中歩行 (Air Walk)", "AirWalk")
-    _G.CreateNessiToggle("足加速 (Speed Hack)", "SpeedHack")
     
-    -- プレイヤー
+    -- ファーム
+    _G.CreateNessiToggle("幽霊船オートファーム", "GhostShipFarm")
+    _G.CreateNessiToggle("シービースト狩り", "SBFarm")
+    _G.CreateNessiToggle("自動レイドクリア", "AutoRaid")
+    
+    -- その他
+    _G.CreateNessiToggle("ヒットボックス拡大", "Hitbox")
     _G.CreateNessiToggle("【！】ターゲット追尾開始", "StickActive")
 end
 
--- スピードハック用ループ
-task.spawn(function()
-    while task.wait() do
-        if _G.NessiConfig.SpeedHack and LP.Character and LP.Character:FindFirstChild("Humanoid") then
-            local hum = LP.Character.Humanoid
-            if hum.MoveDirection.Magnitude > 0 then
-                LP.Character:TranslateBy(hum.MoveDirection * _G.NessiConfig.StepSpeed)
-            end
-        end
-    end
-end)
-
--- 仕上げ：プレイヤーリストの初回描画
+-- 仕上げ：初期リスト描画
 if _G.RefreshPlayerList then
     _G.RefreshPlayerList()
 end
 
-print("--------------------------------")
-print("🐍 NESSI HUB FULL POWER LOADED! 🐍")
-print("Press 'RightControl' to Open/Close")
-print("--------------------------------")
+print("---------------------------------------")
+print("🐍 NESSI HUB MODERN v2 : ALL READY! 🐍")
+print("   - PVP/NPC Hybrid Combat Enabled")
+print("   - Super Speed Enabled")
+print("   - 30s Auto Refresh List Enabled")
+print("---------------------------------------")
