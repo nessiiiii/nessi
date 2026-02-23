@@ -84,17 +84,177 @@ task.spawn(function()
             local root = char.HumanoidRootPart
 
             -- --- 【2. 攻撃系（全マップ・即死・高速）】 ---
-            if _G.NessiConfig.MapAttack or _G.NessiConfig.InstantKill or _G.NessiConfig.FastAttack then
-                for _, v in pairs(workspace.Enemies:GetChildren()) do
-                    if v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 then
-                        -- 即死
-                        if _G.NessiConfig.InstantKill then v.Humanoid.Health = 0 end
-                        
-                        -- 攻撃パケット送信（全マップ/高速）
-                        ReplicatedStorage.Modules.Net["RE/RegisterHit"]:FireServer(v.HumanoidRootPart, {{v, v.HumanoidRootPart}})
+--[[
+    Requested Script based on provided snippets
+    Features:
+    - LeftClickRemote:FireServer() direct call
+    - RegisterAttack / RegisterHit forced firing
+    - __namecall Hook for Aimbot
+--]]
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LocalPlayer = Players.LocalPlayer
+
+-- Global State
+_G.AimbotEnabled = true
+_G.KillAuroraEnabled = true
+_G.AttackRange = 60
+
+-- Utility: Check if a character is alive
+local function IsAlive(char)
+    if not char then return false end
+    local humanoid = char:FindFirstChild("Humanoid")
+    return humanoid and humanoid.Health > 0
+end
+
+-- Utility: Get targets in range (Enemies and other Players)
+local function GetTargetsInRange(range)
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return {} end
+    
+    local myPos = char.HumanoidRootPart.Position
+    local targets = {}
+    
+    -- Check Enemies in Workspace
+    local enemiesFolder = workspace:FindFirstChild("Enemies")
+    if enemiesFolder then
+        for _, enemy in ipairs(enemiesFolder:GetChildren()) do
+            local hrp = enemy:FindFirstChild("HumanoidRootPart")
+            if hrp and IsAlive(enemy) and (hrp.Position - myPos).Magnitude <= range then
+                table.insert(targets, enemy)
+            end
+        end
+    end
+    
+    -- Check other Players
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+            if hrp and IsAlive(player.Character) and (hrp.Position - myPos).Magnitude <= range then
+                table.insert(targets, player.Character)
+            end
+        end
+    end
+    
+    return targets
+end
+
+-- 1 & 2: Execute Attack (LeftClickRemote and RegisterAttack/Hit)
+local function ExecuteAttack()
+    local char = LocalPlayer.Character
+    if not char then return end
+    
+    local tool = char:FindFirstChildOfClass("Tool")
+    if not tool then return end
+    
+    -- Adjust range if Buddha is active (logic from snippet)
+    local range = _G.AttackRange
+    if char:FindFirstChild("HumanoidRootPart") and char.HumanoidRootPart:FindFirstChild("Buddha") then
+        range = 1000
+    end
+    
+    local targets = GetTargetsInRange(range)
+    if #targets == 0 then return end
+
+    -- Method A: LeftClickRemote (if available on the tool)
+    if tool:FindFirstChild("LeftClickRemote") then
+        for i, target in ipairs(targets) do
+            local targetHrp = target:FindFirstChild("HumanoidRootPart")
+            if targetHrp then
+                local direction = (targetHrp.Position - char:GetPivot().Position).Unit
+                tool.LeftClickRemote:FireServer(direction, i)
+            end
+        end
+    -- Method B: RegisterAttack / RegisterHit (Fallback)
+    else
+        local hitList = {}
+        local lastHitPart = nil
+        
+        for _, target in ipairs(targets) do
+            if not target:GetAttribute("IsBoat") then
+                local head = target:FindFirstChild("Head")
+                if head then
+                    table.insert(hitList, {target, head})
+                    lastHitPart = head
+                end
+            end
+        end
+        
+        if lastHitPart then
+            local netFolder = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
+            local registerAttack = netFolder:WaitForChild("RE/RegisterAttack")
+            local registerHit = netFolder:WaitForChild("RE/RegisterHit")
+            
+            pcall(function()
+                registerAttack:FireServer(0.4)
+                registerHit:FireServer(lastHitPart, hitList)
+            end)
+        end
+    end
+end
+
+-- 3: __namecall Hook for Aimbot
+local function InitAimbotHook()
+    local mt = getrawmetatable(game)
+    local oldNamecall = mt.__namecall
+    setreadonly(mt, false)
+    
+    mt.__namecall = newcclosure(function(self, ...)
+        local method = getnamecallmethod()
+        local args = {...}
+        
+        -- Target specific RemoteEvent for redirection
+        if tostring(method) == "FireServer" and tostring(self) == "RemoteEvent" and _G.AimbotEnabled then
+            -- Find closest target for the hook
+            local targets = GetTargetsInRange(500)
+            local closestTarget = nil
+            local shortestDist = math.huge
+            local myPos = LocalPlayer.Character and LocalPlayer.Character:GetPivot().Position
+            
+            if myPos then
+                for _, target in ipairs(targets) do
+                    local hrp = target:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        local dist = (hrp.Position - myPos).Magnitude
+                        if dist < shortestDist then
+                            shortestDist = dist
+                            closestTarget = hrp.Position
+                        end
                     end
                 end
             end
+            
+            if closestTarget then
+                if type(args[2]) ~= "vector" then
+                    args[2] = CFrame.new(closestTarget)
+                else
+                    args[2] = closestTarget
+                end
+                return oldNamecall(self, unpack(args))
+            end
+        end
+        
+        return oldNamecall(self, ...)
+    end)
+    setreadonly(mt, true)
+end
+
+-- Main Loop for Kill Aurora (Auto Attack)
+task.spawn(function()
+    while true do
+        if _G.KillAuroraEnabled then
+            pcall(ExecuteAttack)
+        end
+        task.wait(0.1) -- Adjust speed as needed
+    end
+end)
+
+-- Initialize Hook
+pcall(InitAimbotHook)
+
+print("Script Loaded: Aimbot Hook & Auto Attack active.")
+
 
             -- --- 【3. ファーム系（幽霊船・SB）】 ---
             if _G.NessiConfig.GhostShipFarm then
