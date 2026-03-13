@@ -1,5 +1,5 @@
 -- [[ NESSI HUB : THE TRUE GOD MERGE - PART 1 ]]
--- 1行も省略せず、相棒が提供した必中ファストアタックを統合して作り直すぜ。
+-- 1行も省略せず、相棒が提供した必中ファストアタックを統合して作り直すぜ
 -- 全てのパーツを順番に繋げて実行してくれ！
 
 local LP = game:GetService("Players").LocalPlayer
